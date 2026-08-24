@@ -19,6 +19,6 @@ class SceneSchema(BaseModel):
 
     genres: List[str] = Field(..., description="List of music genres associated with the scene.")
 
-    instrumentation: Optional[List[str]] = Field(default=None, description="List of instruments used in the scene's music.")
-    
-    pacing: Optional[str] = Field(default=None, description="Description of the pacing of the scene.")
+    instrumentation: List[str] = Field(default=None, description="List of instruments used in the scene's music.")
+
+    pacing: str = Field(default=None, description="Description of the pacing of the scene.")

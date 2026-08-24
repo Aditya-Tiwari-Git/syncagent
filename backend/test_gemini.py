@@ -2,7 +2,7 @@ import os
 
 from google import genai
 from google.genai.types import HttpOptions, GenerateContentConfig
-from scene_schema import SceneSchema
+from backend.services.scene_schema import SceneSchema
 
 PROJECT_ID = os.environ["GOOGLE_CLOUD_PROJECT"]
 LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")

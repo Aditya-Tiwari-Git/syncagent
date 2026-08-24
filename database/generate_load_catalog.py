@@ -6,7 +6,7 @@ import clickhouse_connect
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-ENV_FILE = BASE_DIR / ".env.example"
+ENV_FILE = BASE_DIR / ".env"
 
 load_dotenv(ENV_FILE)
 
@@ -287,7 +287,7 @@ def get_clickhouse_client():
     """
 
     BASE_DIR = Path(__file__).resolve().parent.parent
-    ENV_FILE = BASE_DIR / ".env.example"
+    ENV_FILE = BASE_DIR / ".env"
 
     load_dotenv(ENV_FILE)
 
@@ -473,7 +473,7 @@ def show_statistics(client):
 
 def main():
     BASE_DIR = Path(__file__).resolve().parent.parent
-    ENV_FILE = BASE_DIR / ".env.example"
+    ENV_FILE = BASE_DIR / ".env"
 
     load_dotenv(ENV_FILE)
     print("🎵 SyncAgent Music Catalog Generator")

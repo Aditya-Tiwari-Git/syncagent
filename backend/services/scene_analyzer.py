@@ -4,18 +4,13 @@ Analyzes film scenes to extract structured musical requirements.
 """
 
 import json
-import logging
 import re
-from typing import Optional
 
 from google import genai
 from google.genai.types import HttpOptions
 
 from backend.config import settings
 from backend.models.scene import SceneRequirements
-
-logger = logging.getLogger(__name__)
-
 
 def analyze_scene(scene_description: str) -> SceneRequirements:
     """Analyze a film scene using Gemini AI to extract music requirements.
@@ -43,8 +38,6 @@ def analyze_scene(scene_description: str) -> SceneRequirements:
     if not scene_description or not scene_description.strip():
         raise ValueError("Scene description cannot be empty")
     
-    logger.info(f"Analyzing scene: {scene_description[:50]}...")
-    
     try:
         client = genai.Client(
             vertexai=True,
@@ -52,8 +45,7 @@ def analyze_scene(scene_description: str) -> SceneRequirements:
             location=settings.GOOGLE_CLOUD_LOCATION,
             http_options=HttpOptions(api_version="v1")
         )
-    except Exception as e:
-        logger.error(f"Failed to initialize Gemini client: {e}")
+    except Exception:
         raise
 
     prompt = f"""You are an expert film music supervisor.
@@ -100,9 +92,7 @@ Return JSON only.
             model="gemini-2.5-flash",
             contents=prompt,
         )
-        logger.debug(f"Received response from Gemini")
-    except Exception as e:
-        logger.error(f"Gemini API call failed: {e}")
+    except Exception:
         raise
 
     text = response.text.strip()
@@ -114,17 +104,11 @@ Return JSON only.
 
     try:
         data = json.loads(text)
-        logger.debug(f"Successfully parsed JSON response")
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Gemini response as JSON: {e}")
-        logger.error(f"Response text: {text}")
+    except json.JSONDecodeError:
         raise
 
     try:
         requirements = SceneRequirements(**data)
-        logger.info(f"Successfully analyzed scene: energy={requirements.energy}, pacing={requirements.pacing}")
         return requirements
-    except Exception as e:
-        logger.error(f"Failed to create SceneRequirements from data: {e}")
-        logger.error(f"Data: {data}")
+    except Exception:
         raise

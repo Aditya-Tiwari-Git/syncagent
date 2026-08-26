@@ -3,17 +3,11 @@
 Searches for music tracks matching scene requirements.
 """
 
-import logging
-from typing import Optional
-
 import clickhouse_connect
 
 from backend.config import settings
 from backend.models.scene import SceneRequirements
 from backend.models.track import Track
-
-logger = logging.getLogger(__name__)
-
 
 def get_clickhouse_client() -> clickhouse_connect.driver.Client:
     """Create and return a ClickHouse client.
@@ -31,10 +25,8 @@ def get_clickhouse_client() -> clickhouse_connect.driver.Client:
             password=settings.CLICKHOUSE_PASSWORD,
             secure=True,
         )
-        logger.debug("ClickHouse client created successfully")
         return client
-    except Exception as e:
-        logger.error(f"Failed to create ClickHouse client: {e}")
+    except Exception:
         raise
 
 
@@ -72,15 +64,9 @@ def search_candidate_tracks(
         >>> len(tracks)
         42
     """
-    logger.info(
-        f"Searching for tracks: BPM {requirements.bpm_min}-{requirements.bpm_max}, "
-        f"Energy {requirements.energy}, Genres {requirements.genres}"
-    )
-
     try:
         client = get_clickhouse_client()
-    except Exception as e:
-        logger.error(f"Failed to get ClickHouse client: {e}")
+    except Exception:
         raise
 
     query = f"""
@@ -113,9 +99,7 @@ def search_candidate_tracks(
                 "bpm_max": requirements.bpm_max,
             }
         )
-        logger.debug(f"Query returned {len(result.result_rows)} rows")
-    except Exception as e:
-        logger.error(f"ClickHouse query failed: {e}")
+    except Exception:
         raise
 
     tracks = []
@@ -138,9 +122,7 @@ def search_candidate_tracks(
                 license_type=row["license_type"],
             )
             tracks.append(track)
-        except Exception as e:
-            logger.warning(f"Failed to parse track row: {e}")
+        except Exception:
             continue
 
-    logger.info(f"Found {len(tracks)} candidate tracks")
     return tracks

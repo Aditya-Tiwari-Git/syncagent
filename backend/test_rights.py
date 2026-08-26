@@ -1,38 +1,29 @@
 from backend.models.track import Track
-from backend.services.rights_validator import (
-    validate_track
-)
+from backend.tools.rights_tools import validate_music_rights_tool
 
 
 track = Track(
-    id="TRK001",
-    title="Midnight Shadows",
-    artist="Demo Artist",
-    genre="cinematic",
+    id="TR001",
+    title="Rain at 2AM",
+    artist="Test Artist",
+    genre="Ambient",
     mood="melancholic",
-    bpm=72,
+    bpm=60,
     energy=2,
     duration_seconds=180,
-    instrumentation="piano, strings",
-    sync_available=False,
+    instrumentation="piano, cello, atmospheric synths",
+    sync_available=True,
     commercial_use=True,
     territory="worldwide",
     license_price=500,
-    license_type="sync_demo"
+    license_type="standard_sync",
 )
 
 
-result = validate_track(
+result = validate_music_rights_tool(
     track=track,
-    budget=300,
-    territory="worldwide"
+    budget=800,
+    territory="worldwide",
 )
 
-
-print("Valid:", result.valid)
-
-print("\nReasons:")
-
-for reason in result.rejection_reasons:
-
-    print("-", reason)
+print(result)

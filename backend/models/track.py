@@ -96,4 +96,24 @@ class TrackRecommendation(BaseModel):
     match_explanation: str = Field(
         description="Explanation of why this track is recommended"
     )
+
+class TrackData(BaseModel):
+    """Complete catalog track data required for rights validation."""
+
+    id: str = Field(description="Unique catalog track ID")
+    title: str = Field(description="Track title")
+    artist: str = Field(description="Artist name")
+    genre: str = Field(description="Primary genre")
+    mood: str = Field(description="Primary mood")
+    bpm: int = Field(description="Tempo in BPM")
+    energy: int = Field(description="Energy level from 1 to 10")
+    duration_seconds: int = Field(description="Track duration in seconds")
+    instrumentation: str = Field(
+        description="Comma-separated instruments, e.g. 'piano, cello, synth'"
+    )
+    sync_available: bool = Field(description="Whether sync licensing is available")
+    commercial_use: bool = Field(description="Whether commercial use is permitted")
+    territory: str = Field(description="Licensed territory, e.g. 'worldwide'")
+    license_price: float = Field(description="License price in USD")
+    license_type: str = Field(description="License type, e.g. 'standard_sync'")
     

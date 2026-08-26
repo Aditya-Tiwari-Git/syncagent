@@ -3,7 +3,6 @@
 Loads environment variables from .env file and provides validated settings.
 """
 
-import logging
 import os
 from pathlib import Path
 
@@ -11,17 +10,6 @@ from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(PROJECT_ROOT / ".env")
-
-# Setup logging first before anything else
-try:
-    from backend.logging_config import setup_logging
-    setup_logging()
-except Exception:
-    # Fallback if logging setup fails
-    logging.basicConfig(level=logging.INFO)
-
-logger = logging.getLogger(__name__)
-
 
 class Settings:
     """Application configuration settings.
@@ -57,7 +45,4 @@ class Settings:
                 f"Check your .env file or set these variables."
             )
         
-        logger.info("Configuration validated successfully")
-
-
 settings = Settings()

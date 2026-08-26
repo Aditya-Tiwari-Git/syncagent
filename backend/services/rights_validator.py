@@ -3,11 +3,7 @@
 Validates tracks against licensing and rights requirements.
 """
 
-import logging
-
 from backend.models.track import Track, ValidatedTrack
-
-logger = logging.getLogger(__name__)
 
 
 def validate_track(
@@ -46,21 +42,16 @@ def validate_track(
     # Rule 1: Sync rights
     if not track.sync_available:
         reasons.append("Sync rights are not available.")
-        logger.debug(f"Track {track.id} rejected: no sync rights")
 
     # Rule 2: Commercial use
     if require_commercial_use and not track.commercial_use:
         reasons.append("Commercial use is not permitted.")
-        logger.debug(f"Track {track.id} rejected: no commercial use")
 
     # Rule 3: Budget
     if track.license_price > budget:
         reasons.append(
             f"License price (${track.license_price:.2f}) "
             f"exceeds the budget (${budget:.2f})."
-        )
-        logger.debug(
-            f"Track {track.id} rejected: price {track.license_price} > budget {budget}"
         )
 
     # Rule 4: Territory
@@ -74,14 +65,8 @@ def validate_track(
         reasons.append(
             f"Track is only available for '{track.territory}' territory."
         )
-        logger.debug(
-            f"Track {track.id} rejected: territory {track.territory} != {territory}"
-        )
 
     valid = len(reasons) == 0
-    
-    if valid:
-        logger.debug(f"Track {track.id} passed validation")
     
     return ValidatedTrack(
         track=track,

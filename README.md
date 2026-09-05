@@ -1,230 +1,295 @@
-|-- frontend/ # React/Vite/Tailwind user interface
-|-- docs/demo-script.md # Hackathon demonstration flow
+<div align="center">
 
-# SyncAgent
+# 🎬 SyncAgent
 
-SyncAgent is a Google ADK agent that helps filmmakers find music candidates that fit a scene while satisfying configured pre-clearance checks for budget, territory, sync rights, and commercial use.
+**Intelligent AI Music Pre-Clearance Assistant for Filmmakers**
 
-It is a pre-clearance workflow assistant, not a legal clearance system. Final licensing must be verified with the relevant rights holder.
+*Bridge the gap between cinematic creative intent and deterministic licensing reality.*
 
-## Workflow
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18+-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+[![Google ADK & Vertex AI](https://img.shields.io/badge/Google_Cloud-Vertex_AI_%7C_ADK-4285F4.svg?logo=googlecloud&logoColor=white)](https://cloud.google.com/vertex-ai)
+[![ClickHouse](https://img.shields.io/badge/ClickHouse-Cloud-FFCC01.svg?logo=clickhouse&logoColor=black)](https://clickhouse.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+</div>
+
+---
+
+> **⚠️ Legal Notice:** SyncAgent is an automated pre-clearance workflow tool evaluating catalog metadata against explicit rules. It **does not** establish copyright ownership, execute licensing agreements, or replace definitive verification with rights holders.
+
+---
+
+## 💡 Overview
+
+Filmmakers often cut scenes to temp tracks that sound pitch-perfect in the edit suite—only to encounter dealbreaking legal barriers downstream: prohibitive sync fees, blocked commercial clearance, or territorial exclusions.
+
+**SyncAgent solves this early.** It pairs **Gemini's contextual scene understanding** with **deterministic, code-level licensing guardrails**. Creative exploration is unbounded; clearance validation is absolute.
+
+---
+
+## ⚡ Architecture & Workflow
+
+SyncAgent splits responsibilities strictly: **creative interpretation is handled by an LLM, while rights evaluation is entirely deterministic.**
 
 ```text
-Filmmaker scene description
-        |
-        v
-Gemini scene analysis -> structured requirements
-        |
-        v
-ClickHouse catalog search
-        |
-        v
-Deterministic rights validation
-        |
-        v
-Transparent creative ranking
-        |
-        v
-Recommendations and rejection explanations
+Filmmaker Scene Description + Licensing Parameters (Budget, Territory, Commercial Scope)
+                                │
+                                ▼
+         [ Gemini via Vertex AI / Google ADK Supervisor ]
+         Extracts mood, tempo (BPM), energy, genre, instrumentation
+                                │
+                                ▼
+               [ ClickHouse Cloud Catalog Search ]
+               Filters matching candidate tracks at scale
+                                │
+                                ▼
+             [ Deterministic Rights Validation Engine ]
+             Enforces hard boundaries: budget, territory, sync, commercial use
+                                │
+                                ▼
+               [ Transparent Compatibility Scoring ]
+               Ranks rights-passing tracks across 6 musical dimensions (0-100)
+                                │
+                                ▼
+         Recommendations + Transparent Rejections + Exportable PDF
 ```
 
-Gemini handles scene understanding. ClickHouse provides catalog search. Python tools apply deterministic rights rules. Google ADK orchestrates the workflow.
+### Operational Modes
+* **Fast API Mode (`SYNCAGENT_API_MODE=fast`, Default):** Executes a single Gemini call for scene analysis, offloading search, rights logic, and ranking to deterministic Python and ClickHouse routines for lower latency and token efficiency.
+* **Agentic ADK Mode (`SYNCAGENT_API_MODE=adk`):** Invokes the complete multi-step Google ADK supervisor conversation and tool loop—ideal for deep agentic inspection and debugging.
 
-## Project Structure
+---
+
+## 🧰 Tech Stack
+
+| Layer | Technologies |
+| :--- | :--- |
+| **Agent Orchestration** | Google Agent Development Kit (ADK), Vertex AI Gemini |
+| **Backend API** | Python 3.11, FastAPI, Pydantic, ReportLab (PDF Engine) |
+| **Catalog Database** | ClickHouse Cloud (Direct TCP or optional MCP server) |
+| **Frontend UI** | React, TypeScript, Vite, Tailwind CSS, Lucide Icons |
+| **Infrastructure** | Google Cloud Run (API), Firebase Hosting (Frontend), Google Secret Manager |
+
+---
+
+## 📁 Repository Structure
 
 ```text
 syncagent/
-|-- backend/
-|   |-- agent_runner.py       # Local ADK Runner entry point
-|   |-- agents/root_agent.py  # Root Google ADK Agent
-|   |-- tools/                # ADK-callable scene, search, rights, ranking tools
-|   |-- models/               # Pydantic schemas
-|   `-- services/             # Gemini, ClickHouse, matching, and rights logic
-|-- database/                 # ClickHouse schema and demo catalog scripts
-|-- tests/                    # Automated tests
-|   |-- scenarios.py         # 20 deterministic API scenarios
-|   `-- run_scenarios.py     # Scenario runner against a live API
-|-- frontend/                 # React/Vite/Tailwind user interface
-|-- database/README.md        # Safe catalog seeding guide
-|-- Dockerfile                # Cloud Run container
-|-- deploy.sh                 # Source deployment helper
-|-- docs/deployment.md        # Cloud Run guide
-|-- archive/legacy/           # Retained non-ADK scripts from earlier iterations
-|-- .env.example              # Configuration template
-|-- requirements.txt          # Runtime dependencies
-`-- requirements-dev.txt      # Runtime plus test dependencies
+├── backend/
+│   ├── agent_runner.py          # Local Google ADK CLI runner
+│   ├── api.py                   # FastAPI service endpoints
+│   ├── agents/
+│   │   └── root_agent.py        # ADK Root Supervisor Agent definition
+│   ├── models/                  # Pydantic schemas (requests, track entities, analysis)
+│   ├── services/                # Gemini client, ClickHouse driver, rights & ranking engines
+│   └── tools/                   # ADK-compatible tool interfaces
+├── frontend/                    # React / Vite / Tailwind UI application
+├── database/
+│   ├── schema.sql               # ClickHouse catalog DDL
+│   └── seed_catalog.py          # Deterministic demo & synthetic seeding script
+├── docs/                        # Deployment runbooks and demonstration scripts
+├── tests/
+│   ├── scenarios.py             # 20 predefined deterministic API test cases
+│   └── run_scenarios.py         # Test runner for live backend instances
+├── Dockerfile                   # Production container definition for Cloud Run
+└── requirements.txt             # Core Python runtime dependencies
 ```
 
-## Setup
+---
 
-Requirements: Python 3.11+, Google Cloud credentials, a ClickHouse catalog, and access to Gemini through Vertex AI.
+## 🚀 Quickstart
 
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-Copy-Item .env.example .env
+### Prerequisites
+* Python 3.11+
+* Node.js 18+ & npm
+* Active Google Cloud project with Vertex AI enabled
+* Configured ClickHouse Cloud instance
+
+### 1. Environment Configuration
+
+Clone the repository and prepare local environment files:
+
+```bash
+git clone [https://github.com/your-org/syncagent.git](https://github.com/your-org/syncagent.git)
+cd syncagent
+cp .env.example .env
 ```
 
-Set these values in `.env`:
+Populate `.env` with your project parameters:
 
-```text
+```ini
 GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_LOCATION=us-central1
-CLICKHOUSE_HOST=your-clickhouse-host
+GOOGLE_GENAI_USE_VERTEXAI=true
+CLICKHOUSE_HOST=your-clickhouse-host.clickhouse.cloud
 CLICKHOUSE_PORT=8443
 CLICKHOUSE_DATABASE=default
 CLICKHOUSE_USER=your-clickhouse-user
 CLICKHOUSE_PASSWORD=your-clickhouse-password
 FRONTEND_URL=http://localhost:5173
 BACKEND_URL=http://localhost:8000
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+CORS_ORIGINS=http://localhost:5173,[http://127.0.0.1:5173](http://127.0.0.1:5173)
 ```
 
-Authenticate locally with Google Cloud before running the agent, for example with Application Default Credentials. Never commit `.env` or credentials.
+Authenticate your local environment to Google Cloud via Application Default Credentials (ADC):
 
-## Run The Agent
-
-The supported local entry point is:
-
-```powershell
-python -m backend.agent_runner
+```bash
+gcloud auth application-default login
 ```
 
-The runner creates an in-memory ADK session, invokes `root_agent`, and prints the final response. The sample prompt in `backend/agent_runner.py` demonstrates the intended workflow.
+### 2. Backend Setup & Seeding
 
-## Run The API And Frontend
+Create a virtual environment and seed the ClickHouse catalog:
 
-Start the FastAPI backend from the repository root:
+```bash
+python -m venv .venv
+# On Linux/macOS:
+source .venv/bin/activate
+# On Windows (PowerShell):
+# .venv\Scripts\Activate.ps1
 
-```powershell
-uvicorn backend.api:app --reload --port 8000
-```
+pip install -r requirements.txt -r requirements-dev.txt
 
-In a second terminal, start the frontend:
-
-```powershell
-cd frontend
-Copy-Item .env.example .env
-npm install
-npm run dev
-```
-
-Open `http://localhost:5173`. FastAPI documentation is available at `http://localhost:8000/docs`.
-
-The frontend calls the backend through `VITE_BACKEND_URL`. CORS origins are controlled by `CORS_ORIGINS`.
-
-## API
-
-`GET /` returns the service identity. `GET /health` returns the health status.
-
-Analyze a scene:
-
-```powershell
-Invoke-RestMethod http://localhost:8000/api/analyze -Method Post -ContentType 'application/json' -Body (@{
-        scene_description = 'An exhausted detective walks through an empty Mumbai street at 2 AM after failing to solve a case.'
-        budget = 800
-        territory = 'Worldwide'
-        top_k = 5
-} | ConvertTo-Json)
-```
-
-`POST /api/report` accepts the same JSON request and returns `syncagent-pre-clearance-report.pdf`.
-
-The response contains `scene_analysis`, only rights-passing `recommendations`, `rejected_candidates` with exact reasons, `total_candidates`, and the legal disclaimer.
-
-For ADK development tools, you can also use the ADK CLI from the repository root when installed:
-
-```powershell
-adk web backend
-```
-
-## Agent Contract
-
-The root agent must:
-
-1. Analyze the scene before recommending music.
-2. Search the approved catalog with the search tool.
-3. Validate candidates with deterministic rights rules.
-4. Rank candidates by creative compatibility.
-5. Explain rejected candidates.
-6. Never claim that a track is legally cleared.
-7. State that final licensing requires rights-holder verification.
-
-## Data And Rights
-
-The catalog is demo data unless explicitly connected to a verified rights source. Passing the configured checks means only that the catalog record satisfies the configured pre-clearance rules. It does not establish ownership, exclusivity, or legal clearance.
-
-## Tests
-
-Install development dependencies and run the focused automated suite:
-
-```powershell
-python -m pip install -r requirements-dev.txt
-python -m pytest -q
-python -m compileall -q backend database tests
-```
-
-The database connectivity test is an integration check and requires valid ClickHouse credentials. The agent runner requires working Google Cloud and ClickHouse access.
-
-Run the predefined scenarios against a running backend:
-
-```powershell
-python tests/run_scenarios.py --scenario "Late Night Detective"
-python tests/run_scenarios.py --all
-```
-
-The scenario suite contains 20 cases covering detective, romance, wedding, action, suspense, breakup, hopeful, documentary, corporate, sports, memory, rainy-city, meditation, nightclub, no-match, worldwide, India, US, commercial, and failed-rights workflows.
-
-## Catalog Seeding
-
-ClickHouse remains the catalog source of truth. The safe seed command preserves existing rows and skips existing IDs:
-
-```powershell
+# Seed catalog with baseline deterministic tracks and synthetic pool
 python database/seed_catalog.py --count 200 --seed 42
 ```
 
-To intentionally replace the catalog, use `--clear`. To explicitly append, use `--append`. The first 15 records are named deterministic demo tracks (`TRK-DEMO-*`) with designed rights and creative outcomes; generated tracks use compatible style profiles and a fixed seed.
+Start the local API:
 
-## Cloud Run Deployment
+```bash
+uvicorn backend.api:app --reload --port 8000
+```
+* Interactive API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-The backend container listens on Cloud Run's `PORT` and binds to `0.0.0.0`:
+### 3. Frontend Setup
 
-```powershell
-gcloud auth login
-gcloud config set project PROJECT_ID
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com aiplatform.googleapis.com artifactregistry.googleapis.com
-gcloud run deploy syncagent --source . --region us-central1
+In a separate terminal:
+
+```bash
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+* Web Dashboard: [http://localhost:5173](http://localhost:5173)
+
+---
+
+## 🧪 Testing & ADK CLI
+
+Run the test suite and verify static compilation:
+
+```bash
+pytest -q
+python -m compileall -q backend database tests
 ```
 
-See [docs/deployment.md](docs/deployment.md) for service identity IAM, Secret Manager, private/public access, Docker deployment, health verification, and cost notes. The Cloud Run service account needs least-privilege `roles/aiplatform.user`; do not commit service-account JSON keys.
+Execute the **20 real-world automated scenarios** against the running backend:
 
-For the complete deployment runbook, see [docs/deployment-guide.md](docs/deployment-guide.md). For a product and architecture explanation suitable for users or judges, see [docs/product-overview.md](docs/product-overview.md).
+```bash
+# Run a specific scenario
+python tests/run_scenarios.py --scenario "Late Night Detective"
 
-For a demo-only public service, explicitly add `--allow-unauthenticated`. Public access allows anyone with the URL to call the API, so authentication and rate limiting are recommended before production use.
+# Run the complete test suite
+python tests/run_scenarios.py --all
+```
 
-## Configuration Notes
+To run the local ADK in-memory supervisor session directly in CLI:
 
-Configuration is loaded from `.env` in the repository root. The API uses request-scoped structured logs with request IDs; raw exceptions are kept out of user-facing responses. ClickHouse MCP is optional and enabled with `CLICKHOUSE_MCP_ENABLED=true`; the direct deterministic ClickHouse search remains the default local path.
+```bash
+python -m backend.agent_runner
+```
 
-Required runtime variables are `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GOOGLE_GENAI_USE_VERTEXAI`, `CLICKHOUSE_HOST`, `CLICKHOUSE_PORT`, `CLICKHOUSE_DATABASE`, `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD`, and `CORS_ORIGINS`. Use Application Default Credentials locally and Cloud Run's service identity in deployment. Do not set `GOOGLE_API_KEY` when using Vertex AI.
+---
 
-The API defaults to `SYNCAGENT_API_MODE=fast`: one Gemini scene-analysis call followed by deterministic ClickHouse search, rights validation, and ranking. Set `SYNCAGENT_API_MODE=adk` only when you explicitly want the multi-step ADK supervisor conversation; it uses more model calls and tokens. `backend/agent_runner.py` remains the full ADK demonstration entry point.
+## 📡 API Reference
 
-## Frontend Experience
+### Analyze Scene & Match Tracks
 
-The React/Vite interface provides a cinematic scene brief form, loading state, structured scene analysis, recommendation cards, rejected-candidate explanations, no-match guidance, and PDF download. It is responsive for desktop, tablet, and mobile use.
+`POST /api/analyze`
 
-## Legal Disclaimer
+**Request Body:**
+```json
+{
+  "scene_description": "An exhausted detective walks through an empty Mumbai street at 2 AM after failing to solve a case.",
+  "budget": 800,
+  "territory": "Worldwide",
+  "top_k": 5
+}
+```
 
-This report is an automated pre-clearance assessment based on the configured catalog and licensing data. It does not constitute legal clearance, a licensing contract, or confirmation of rights ownership. Final licensing must be verified with the relevant rights holder.
+**Response Format:**
+```json
+{
+  "scene_analysis": {
+    "mood": "Melancholic / Brooding",
+    "tempo_range": [65, 85],
+    "energy_level": 0.3,
+    "genres": ["Noir Jazz", "Dark Ambient", "Down-tempo"],
+    "instrumentation": ["Muted Trumpet", "Upright Bass", "Subtle Rhodes"]
+  },
+  "recommendations": [
+    {
+      "track_id": "TRK-DEMO-003",
+      "title": "Rain on Asphalt",
+      "artist": "Midnight Trio",
+      "score": 94.2,
+      "price": 650.0,
+      "territory": "Worldwide",
+      "sync_cleared": true,
+      "commercial_use": true
+    }
+  ],
+  "rejected_candidates": [
+    {
+      "track_id": "TRK-DEMO-009",
+      "title": "Neon Chase",
+      "reason": "License price ($1,200) exceeds maximum budget ($800)"
+    }
+  ],
+  "total_candidates": 24,
+  "disclaimer": "This report is an automated pre-clearance assessment..."
+}
+```
 
-## Scope
+### Export Clearance Report
 
-Included: text scene analysis, structured requirements, ClickHouse search, deterministic rights checks, creative ranking, rejection explanations, and ADK orchestration.
+`POST /api/report`
 
-Deferred: legal contracting, rights-holder discovery, negotiations, full video upload processing, audio fingerprinting, and music generation.
+Takes the same JSON request payload as `/api/analyze` and returns a generated pre-clearance summary as a downloadable `syncagent-pre-clearance-report.pdf`.
 
-## License
+---
 
-See [LICENSE](LICENSE).
+## 🚢 Deployment
+
+SyncAgent is engineered for containerized deployment on **Google Cloud Run**:
+
+```bash
+# Set active project
+gcloud config set project YOUR_PROJECT_ID
+
+# Enable requisite Google Cloud APIs
+gcloud services enable \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  aiplatform.googleapis.com \
+  secretmanager.googleapis.com
+
+# Deploy API service from root context
+gcloud run deploy syncagent \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated
+```
+
+> For step-by-step secret wiring via Secret Manager, custom domain configuration, and Firebase deployment, refer to [docs/deployment.md](docs/deployment.md).
+
+---
+
+## ⚖️ Scope & Legal Boundaries
+
+* **In Scope:** Natural-language scene parsing, musical attribute extraction, multi-dimensional score calculation, deterministic licensing boundary validation (territory, budget, commercial use, sync status), exportable audit reports.
+* **Out of Scope:** Direct automated copyright owner tracking, PRO/CMO negotiation pipelines, legal contract compilation, audio generation, and audio fingerprinting.

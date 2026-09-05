@@ -1,5 +1,6 @@
 # Virtual environment
 .venv/
+venv/
 frontend/node_modules/
 frontend/dist/
 
@@ -9,9 +10,14 @@ __pycache__/
 
 # Environment variables
 .env
+frontend/.env
 
 # Google credentials
 *.json
+*.log
+build/
+dist/
+*.tsbuildinfo
 
 # VS Code
 .vscode/

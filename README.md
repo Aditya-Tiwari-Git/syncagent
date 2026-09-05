@@ -42,6 +42,13 @@ syncagent/
 |   `-- services/             # Gemini, ClickHouse, matching, and rights logic
 |-- database/                 # ClickHouse schema and demo catalog scripts
 |-- tests/                    # Automated tests
+|   |-- scenarios.py         # 20 deterministic API scenarios
+|   `-- run_scenarios.py     # Scenario runner against a live API
+|-- frontend/                 # React/Vite/Tailwind user interface
+|-- database/README.md        # Safe catalog seeding guide
+|-- Dockerfile                # Cloud Run container
+|-- deploy.sh                 # Source deployment helper
+|-- docs/deployment.md        # Cloud Run guide
 |-- archive/legacy/           # Retained non-ADK scripts from earlier iterations
 |-- .env.example              # Configuration template
 |-- requirements.txt          # Runtime dependencies
@@ -160,9 +167,47 @@ python -m compileall -q backend database tests
 
 The database connectivity test is an integration check and requires valid ClickHouse credentials. The agent runner requires working Google Cloud and ClickHouse access.
 
+Run the predefined scenarios against a running backend:
+
+```powershell
+python tests/run_scenarios.py --scenario "Late Night Detective"
+python tests/run_scenarios.py --all
+```
+
+The scenario suite contains 20 cases covering detective, romance, wedding, action, suspense, breakup, hopeful, documentary, corporate, sports, memory, rainy-city, meditation, nightclub, no-match, worldwide, India, US, commercial, and failed-rights workflows.
+
+## Catalog Seeding
+
+ClickHouse remains the catalog source of truth. The safe seed command preserves existing rows and skips existing IDs:
+
+```powershell
+python database/seed_catalog.py --count 200 --seed 42
+```
+
+To intentionally replace the catalog, use `--clear`. To explicitly append, use `--append`. The first 15 records are named deterministic demo tracks (`TRK-DEMO-*`) with designed rights and creative outcomes; generated tracks use compatible style profiles and a fixed seed.
+
+## Cloud Run Deployment
+
+The backend container listens on Cloud Run's `PORT` and binds to `0.0.0.0`:
+
+```powershell
+gcloud auth login
+gcloud config set project PROJECT_ID
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com aiplatform.googleapis.com artifactregistry.googleapis.com
+gcloud run deploy syncagent --source . --region us-central1
+```
+
+See [docs/deployment.md](docs/deployment.md) for service identity IAM, Secret Manager, private/public access, Docker deployment, health verification, and cost notes. The Cloud Run service account needs least-privilege `roles/aiplatform.user`; do not commit service-account JSON keys.
+
+For a demo-only public service, explicitly add `--allow-unauthenticated`. Public access allows anyone with the URL to call the API, so authentication and rate limiting are recommended before production use.
+
 ## Configuration Notes
 
 Configuration is loaded from `.env` in the repository root. The API uses request-scoped structured logs with request IDs; raw exceptions are kept out of user-facing responses. ClickHouse MCP is optional and enabled with `CLICKHOUSE_MCP_ENABLED=true`; the direct deterministic ClickHouse search remains the default local path.
+
+Required runtime variables are `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `GOOGLE_GENAI_USE_VERTEXAI`, `CLICKHOUSE_HOST`, `CLICKHOUSE_PORT`, `CLICKHOUSE_DATABASE`, `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD`, and `CORS_ORIGINS`. Use Application Default Credentials locally and Cloud Run's service identity in deployment. Do not set `GOOGLE_API_KEY` when using Vertex AI.
+
+The API defaults to `SYNCAGENT_API_MODE=fast`: one Gemini scene-analysis call followed by deterministic ClickHouse search, rights validation, and ranking. Set `SYNCAGENT_API_MODE=adk` only when you explicitly want the multi-step ADK supervisor conversation; it uses more model calls and tokens. `backend/agent_runner.py` remains the full ADK demonstration entry point.
 
 ## Frontend Experience
 

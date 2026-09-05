@@ -45,3 +45,25 @@ def test_analyze_request_model_accepts_demo_request(monkeypatch):
     })
     assert response.status_code == 200
     assert response.json()['success'] is True
+
+
+def test_report_endpoint_returns_pdf(monkeypatch):
+    async def fake_run_syncagent(**kwargs):
+        return {
+            'scene_analysis': {},
+            'recommendations': [],
+            'rejected_candidates': [],
+            'total_candidates': 0,
+            'disclaimer': 'Final licensing must be verified with the relevant rights holder.',
+        }
+
+    monkeypatch.setattr('backend.api.run_syncagent', fake_run_syncagent)
+    response = client.post('/api/report', json={
+        'scene_description': 'A quiet scene with no suitable licensed music.',
+        'budget': 50,
+        'territory': 'Worldwide',
+        'top_k': 5,
+    })
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'application/pdf'
+    assert response.content.startswith(b'%PDF')

@@ -178,7 +178,7 @@ npm run dev
 
 ---
 
-## 🧪 Testing & ADK CLI
+<!-- ## 🧪 Testing & ADK CLI
 
 Run the test suite and verify static compilation:
 
@@ -203,7 +203,7 @@ To run the local ADK in-memory supervisor session directly in CLI:
 python -m backend.agent_runner
 ```
 
----
+--- -->
 
 ## 📡 API Reference
 

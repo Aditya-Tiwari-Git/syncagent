@@ -21,6 +21,8 @@ def get_clickhouse_client() -> clickhouse_connect.driver.Client:
     try:
         client = clickhouse_connect.get_client(
             host=settings.CLICKHOUSE_HOST,
+            port=settings.CLICKHOUSE_PORT,
+            database=settings.CLICKHOUSE_DATABASE,
             username=settings.CLICKHOUSE_USER,
             password=settings.CLICKHOUSE_PASSWORD,
             secure=True,

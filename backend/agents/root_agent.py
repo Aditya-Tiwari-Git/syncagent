@@ -494,11 +494,11 @@ Before producing the final JSON, verify:
 If any answer is NO, fix the JSON before returning it.
 """,
 
-    tools=[
+    tools=[tool for tool in [
         analyze_scene_tool,
         search_music_catalog_tool,
         validate_music_rights_tool,
         rank_music_candidates_tool,
-        clickhouse_mcp
-    ]
+      clickhouse_mcp,
+    ] if tool is not None]
 )

@@ -1,16 +1,19 @@
-import json
 import os
 import uuid
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+
+from backend.services.report_service import generate_clearance_report
 
 from backend.models.api import (
     AnalyzeRequest,
-    AnalyzeResponse
+    AnalyzeResponse,
 )
 
 from backend.services.agent_service import (
-    run_syncagent
+    run_syncagent,
 )
 
 from backend.services.logger import logger
@@ -20,16 +23,13 @@ from backend.services.logger import logger
 # Google Cloud / Vertex AI configuration
 # ---------------------------------------------------------
 
-# Prefer Vertex AI when a Google Cloud project is configured.
 if os.getenv("GOOGLE_CLOUD_PROJECT"):
 
     os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
 
-    # Prevent accidental use of GOOGLE_API_KEY
-    # when Vertex AI is being used.
     os.environ.pop(
         "GOOGLE_API_KEY",
-        None
+        None,
     )
 
 
@@ -43,7 +43,24 @@ app = FastAPI(
         "AI-powered music pre-clearance "
         "agent for filmmakers"
     ),
-    version="0.1.0"
+    version="0.1.0",
+)
+
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -56,7 +73,7 @@ async def root():
 
     return {
         "name": "SyncAgent",
-        "status": "online"
+        "status": "online",
     }
 
 
@@ -68,8 +85,77 @@ async def root():
 async def health():
 
     return {
-        "status": "healthy"
+        "status": "healthy",
     }
+
+
+# ---------------------------------------------------------
+# Helper: run and normalize SyncAgent response
+# ---------------------------------------------------------
+
+async def run_analysis(
+    request: AnalyzeRequest,
+    request_id: str | None = None,
+):
+    """
+    Run SyncAgent and normalize its response into the
+    same structure used by AnalyzeResponse.
+
+    This prevents /api/analyze and /api/report from
+    handling agent output differently.
+    """
+
+    result = await run_syncagent(
+        scene_description=request.scene_description,
+        budget=request.budget,
+        territory=request.territory,
+        top_k=request.top_k,
+    )
+
+    if not isinstance(result, dict):
+
+        raise ValueError(
+            "SyncAgent returned an invalid response type."
+        )
+
+    response = {
+        "success": True,
+
+        "scene_analysis": result.get(
+            "scene_analysis",
+            {},
+        ),
+
+        "recommendations": result.get(
+            "recommendations",
+            [],
+        ),
+
+        "rejected_candidates": result.get(
+            "rejected_candidates",
+            [],
+        ),
+
+        "total_candidates": result.get(
+            "total_candidates",
+            0,
+        ),
+
+        "disclaimer": result.get(
+            "disclaimer",
+            (
+                "Final licensing must be verified "
+                "with the relevant rights holder."
+            ),
+        ),
+    }
+
+    # Validate/normalize against your Pydantic model.
+    validated = AnalyzeResponse.model_validate(
+        response
+    )
+
+    return validated.model_dump()
 
 
 # ---------------------------------------------------------
@@ -78,10 +164,10 @@ async def health():
 
 @app.post(
     "/api/analyze",
-    response_model=AnalyzeResponse
+    response_model=AnalyzeResponse,
 )
 async def analyze(
-    request: AnalyzeRequest
+    request: AnalyzeRequest,
 ):
 
     request_id = str(
@@ -90,7 +176,7 @@ async def analyze(
 
     logger.info(
         "[%s] Starting analysis",
-        request_id
+        request_id,
     )
 
     try:
@@ -100,76 +186,19 @@ async def analyze(
             request_id,
             request.budget,
             request.territory,
-            request.top_k
+            request.top_k,
         )
 
-        result = await run_syncagent(
-            scene_description=(
-                request.scene_description
-            ),
-
-            budget=request.budget,
-
-            territory=request.territory,
-
-            top_k=request.top_k
+        response = await run_analysis(
+            request=request,
+            request_id=request_id,
         )
-
-        logger.info(
-            "[%s] Agent workflow returned successfully",
-            request_id
-        )
-
-        print("\n===== AGENT RESULT =====")
-        print(
-            json.dumps(
-                result,
-                indent=2
-            )
-        )
-        print("========================\n")
-
-        response = {
-            "success": True,
-
-            "scene_analysis": result.get(
-                "scene_analysis",
-                {}
-            ),
-
-            "recommendations": result.get(
-                "recommendations",
-                []
-            ),
-
-            "rejected_candidates": result.get(
-                "rejected_candidates",
-                []
-            ),
-
-            "total_candidates": result.get(
-                "total_candidates",
-                0
-            ),
-
-            "disclaimer": result.get(
-                "disclaimer",
-                (
-                    "Final licensing must be verified "
-                    "with the relevant rights holder."
-                )
-            )
-        }
 
         logger.info(
             "[%s] Analysis completed | recommendations=%s | rejected=%s",
             request_id,
             len(response["recommendations"]),
-            len(response["rejected_candidates"])
-        )
-
-        print(
-            f"[{request_id}] Analysis completed"
+            len(response["rejected_candidates"]),
         )
 
         return response
@@ -178,17 +207,108 @@ async def analyze(
 
         logger.exception(
             "[%s] SyncAgent analysis failed",
-            request_id
-        )
-
-        print(
-            f"[{request_id}] Analysis failed"
+            request_id,
         )
 
         raise HTTPException(
             status_code=500,
             detail={
                 "request_id": request_id,
-                "error": str(e)
-            }
+                "error": "Analysis failed. Check the server logs using the request ID.",
+            },
+        ) from e
+
+
+# ---------------------------------------------------------
+# Generate PDF report
+# ---------------------------------------------------------
+
+@app.post(
+    "/api/report",
+)
+async def generate_report(
+    request: AnalyzeRequest,
+):
+
+    request_id = str(
+        uuid.uuid4()
+    )
+
+    logger.info(
+        "[%s] Starting PDF report generation",
+        request_id,
+    )
+
+    try:
+
+        # IMPORTANT:
+        # Use the same normalized analysis pipeline
+        # as /api/analyze.
+        result = await run_analysis(
+            request=request,
+            request_id=request_id,
+        )
+
+        logger.info(
+            "[%s] Analysis ready for PDF | recommendations=%s | rejected=%s",
+            request_id,
+            len(result["recommendations"]),
+            len(result["rejected_candidates"]),
+        )
+
+        pdf_buffer = generate_clearance_report(
+            scene_description=request.scene_description,
+
+            budget=request.budget,
+
+            territory=request.territory,
+
+            scene_analysis=result.get(
+                "scene_analysis",
+                {},
+            ),
+
+            recommendations=result.get(
+                "recommendations",
+                [],
+            ),
+
+            rejected_candidates=result.get(
+                "rejected_candidates",
+                [],
+            ),
+        )
+
+        logger.info(
+            "[%s] PDF report generated successfully",
+            request_id,
+        )
+
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": (
+                    "attachment; "
+                    'filename="syncagent-pre-clearance-report.pdf"'
+                ),
+
+                # Useful for debugging the request.
+                "X-Request-ID": request_id,
+            },
+        )
+
+    except Exception as e:
+
+        logger.exception(
+            "[%s] PDF report generation failed",
+            request_id,
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "request_id": request_id,
+                "error": "Report generation failed. Check the server logs using the request ID.",
+            },
         ) from e

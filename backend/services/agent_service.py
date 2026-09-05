@@ -7,6 +7,7 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 from backend.agents.root_agent import root_agent
+from backend.models.api import AnalyzeResponse
 from backend.services.logger import logger
 
 
@@ -245,7 +246,14 @@ Never claim legal clearance.
             workflow_id
         )
 
-        return parsed
+        validated = AnalyzeResponse.model_validate(
+            {
+                "success": True,
+                **parsed,
+            }
+        )
+
+        return validated.model_dump()
 
     except Exception:
 

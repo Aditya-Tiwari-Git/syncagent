@@ -21,6 +21,8 @@ class Settings:
     GOOGLE_CLOUD_PROJECT: str | None = os.getenv("GOOGLE_CLOUD_PROJECT")
     GOOGLE_CLOUD_LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
     CLICKHOUSE_HOST: str | None = os.getenv("CLICKHOUSE_HOST")
+    CLICKHOUSE_PORT: int = int(os.getenv("CLICKHOUSE_PORT", "8443"))
+    CLICKHOUSE_DATABASE: str = os.getenv("CLICKHOUSE_DATABASE", "default")
     CLICKHOUSE_USER: str | None = os.getenv("CLICKHOUSE_USER")
     CLICKHOUSE_PASSWORD: str | None = os.getenv("CLICKHOUSE_PASSWORD")
 

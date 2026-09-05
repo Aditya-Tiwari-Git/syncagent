@@ -1,14 +1,24 @@
 import os
 
-from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import (
-    StdioConnectionParams,
-)
-
-from mcp import StdioServerParameters
-
 
 def create_clickhouse_mcp_toolset():
+    """Create the optional ClickHouse MCP toolset when ADK supports it.
+
+    The deterministic Python ClickHouse search remains the local fallback. This
+    keeps the agent importable when the installed ADK and MCP releases have
+    incompatible protocol helper versions.
+    """
+    if os.getenv("CLICKHOUSE_MCP_ENABLED", "false").lower() != "true":
+        return None
+
+    try:
+        from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+        from google.adk.tools.mcp_tool.mcp_session_manager import (
+            StdioConnectionParams,
+        )
+        from mcp import StdioServerParameters
+    except ImportError:
+        return None
 
     return McpToolset(
         connection_params=(

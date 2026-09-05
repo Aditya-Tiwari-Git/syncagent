@@ -199,6 +199,8 @@ gcloud run deploy syncagent --source . --region us-central1
 
 See [docs/deployment.md](docs/deployment.md) for service identity IAM, Secret Manager, private/public access, Docker deployment, health verification, and cost notes. The Cloud Run service account needs least-privilege `roles/aiplatform.user`; do not commit service-account JSON keys.
 
+For the complete deployment runbook, see [docs/deployment-guide.md](docs/deployment-guide.md). For a product and architecture explanation suitable for users or judges, see [docs/product-overview.md](docs/product-overview.md).
+
 For a demo-only public service, explicitly add `--allow-unauthenticated`. Public access allows anyone with the URL to call the API, so authentication and rate limiting are recommended before production use.
 
 ## Configuration Notes
